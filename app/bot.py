@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.memory import MemoryStorage
+from app.database.fsm_storage import SQLiteFSMStorage
 
 from app.config import BOT_TOKEN
 from app.database.db import init_db
@@ -38,7 +38,7 @@ async def main():
     logger.info("База данных инициализирована")
 
     bot = Bot(token=BOT_TOKEN)
-    dp = Dispatcher(storage=MemoryStorage())
+    dp = Dispatcher(storage=SQLiteFSMStorage())
 
     dp.include_router(start.router)
     dp.include_router(reset.router)
