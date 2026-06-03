@@ -1,9 +1,10 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher
+from aiogram import Dispatcher
 from app.database.fsm_storage import SQLiteFSMStorage
 from app.middlewares.anti_abuse import MessageThrottlingMiddleware, CallbackThrottlingMiddleware
+from app.services.typing_bot import TypingBot
 
 from app.config import BOT_TOKEN
 from app.database.db import init_db
@@ -38,7 +39,7 @@ async def main():
     await init_db()
     logger.info("База данных инициализирована")
 
-    bot = Bot(token=BOT_TOKEN)
+    bot = TypingBot(token=BOT_TOKEN)
     dp = Dispatcher(storage=SQLiteFSMStorage())
 
     # Онбординг и сброс — без throttle, чтобы не мешать кликам по кнопкам
