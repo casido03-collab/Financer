@@ -1,24 +1,24 @@
 import asyncio
-from typing import Any
 from aiogram import Bot
+from aiogram.methods import SendMessage, SendChatAction
 from aiogram.enums import ChatAction
 
 
-def _typing_seconds(text: str) -> float:
-    """Calculates typing pause proportional to text length."""
-    if not text:
-        return 0.5
+def _pause(text: str) -> float:
+    """Typing pause proportional to message length."""
     return min(0.5 + len(text) * 0.03, 2.5)
 
 
 class TypingBot(Bot):
-    """Bot that shows a 'typing...' indicator before every send_message."""
+    """Automatically shows 'typing...' before every outgoing text message."""
 
-    async def send_message(self, chat_id: Any, text: str, **kwargs) -> Any:
-        pause = _typing_seconds(text)
-        try:
-            await self.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-            await asyncio.sleep(pause)
-        except Exception:
-            pass
-        return await super().send_message(chat_id=chat_id, text=text, **kwargs)
+    async def __call__(self, method, *args, **kwargs):
+        if isinstance(method, SendMessage) and method.text:
+            try:
+                await super().__call__(
+                    SendChatAction(chat_id=method.chat_id, action=ChatAction.TYPING)
+                )
+                await asyncio.sleep(_pause(method.text))
+            except Exception:
+                pass
+        return await super().__call__(method, *args, **kwargs)
