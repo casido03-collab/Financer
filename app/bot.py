@@ -41,12 +41,24 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=SQLiteFSMStorage())
 
-    dp.message.middleware(MessageThrottlingMiddleware())
-    dp.callback_query.middleware(CallbackThrottlingMiddleware())
-
+    # Онбординг и сброс — без throttle, чтобы не мешать кликам по кнопкам
     dp.include_router(start.router)
     dp.include_router(reset.router)
     dp.include_router(onboarding.router)
+
+    # Все остальные роутеры — с защитой от абуза
+    throttle = MessageThrottlingMiddleware()
+    cb_throttle = CallbackThrottlingMiddleware()
+
+    for r in (menu.router, consultation.router, budget_check.router,
+              credit_cards.router, goals.router, expenses.router,
+              rating.router, articles.router, personal_cabinet.router,
+              payments.router, fallback.router):
+        r.message.middleware(throttle)
+
+    for r in (articles.router, personal_cabinet.router, goals.router):
+        r.callback_query.middleware(cb_throttle)
+
     dp.include_router(menu.router)
     dp.include_router(payments.router)
     dp.include_router(consultation.router)
