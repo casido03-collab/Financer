@@ -11,7 +11,9 @@ from app.keyboards.reply import (
 )
 from app.services.finance_calculators import calculate_financial_score
 from app.services.typing import typing
+import logging
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 WORK_TYPES = [
@@ -52,6 +54,7 @@ async def start_onboarding(message: Message, state: FSMContext):
 
 @router.message(OnboardingFSM.work_type)
 async def process_work_type(message: Message, state: FSMContext):
+    logger.info("work_type got: %r | in list: %s", message.text, message.text in WORK_TYPES)
     if message.text not in WORK_TYPES:
         await message.answer("Пожалуйста, выберите один из вариантов.", reply_markup=work_type_kb())
         return
