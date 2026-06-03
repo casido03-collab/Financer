@@ -10,6 +10,7 @@ from app.handlers import (
     start,
     onboarding,
     menu,
+    reset,
     consultation,
     budget_check,
     credit_cards,
@@ -39,6 +40,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.include_router(start.router)
+    dp.include_router(reset.router)
     dp.include_router(onboarding.router)
     dp.include_router(menu.router)
     dp.include_router(payments.router)

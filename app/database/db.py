@@ -302,6 +302,38 @@ async def get_budget_checks_count(user_id: int) -> int:
             return row[0] if row else 0
 
 
+async def reset_full(telegram_id: int):
+    """Полный сброс: удаляет профиль, историю, цели, карты. Сбрасывает onboarding."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT id FROM users WHERE telegram_id = ?", (telegram_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            return
+        user_id = row[0]
+        await db.execute("DELETE FROM user_profiles WHERE user_id = ?", (user_id,))
+        await db.execute("DELETE FROM consultations WHERE user_id = ?", (user_id,))
+        await db.execute("DELETE FROM goals WHERE user_id = ?", (user_id,))
+        await db.execute("DELETE FROM credit_cards WHERE user_id = ?", (user_id,))
+        await db.execute("DELETE FROM payments WHERE user_id = ?", (user_id,))
+        await db.execute(
+            "UPDATE users SET onboarding_completed = FALSE, subscription_until = NULL, tariff = 'free' WHERE telegram_id = ?",
+            (telegram_id,),
+        )
+        await db.commit()
+
+
+async def reset_soft(telegram_id: int):
+    """Мягкий сброс: очищает только FSM-контекст, onboarding остаётся завершённым."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE users SET onboarding_completed = TRUE WHERE telegram_id = ?",
+            (telegram_id,),
+        )
+        await db.commit()
+
+
 async def get_days_with_bot(user_id: int) -> int:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
