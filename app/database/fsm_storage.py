@@ -26,7 +26,12 @@ class SQLiteFSMStorage(BaseStorage):
     async def set_state(self, key: StorageKey, state: StateType = None) -> None:
         await self._init()
         k = self._key(key)
-        state_str = str(state) if state is not None else None
+        if state is None:
+            state_str = None
+        elif hasattr(state, "state"):
+            state_str = state.state          # "OnboardingFSM:work_type"
+        else:
+            state_str = str(state)
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
                 """
