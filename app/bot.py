@@ -20,6 +20,7 @@ from app.handlers import (
     articles,
     personal_cabinet,
     payments,
+    fallback,
 )
 
 logging.basicConfig(
@@ -52,6 +53,7 @@ async def main():
     dp.include_router(rating.router)
     dp.include_router(articles.router)
     dp.include_router(personal_cabinet.router)
+    dp.include_router(fallback.router)
 
     logger.info("Бот запускается...")
     try:
