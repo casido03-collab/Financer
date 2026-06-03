@@ -176,18 +176,18 @@ def calculate_financial_score(profile: dict) -> tuple[int, str]:
     score = 50
 
     spending_map = {
-        "Трачу с умом": 15,
+        "Трачу с умом": 20,
         "Иногда трачу лишнее": 5,
-        "Часто покупаю ненужное": -10,
-        "Почти не контролирую расходы": -20,
+        "Часто покупаю ненужное": -15,
+        "Почти не контролирую расходы": -25,
     }
     score += spending_map.get(profile.get("spending_style", ""), 0)
 
     impulsive_map = {
-        "Нет, редко": 10,
+        "Нет, редко": 15,
         "Иногда": 0,
         "Часто": -10,
-        "Да, это моя главная проблема": -20,
+        "Да, это моя главная проблема": -25,
     }
     score += impulsive_map.get(profile.get("impulsive_spending", ""), 0)
 
@@ -198,23 +198,6 @@ def calculate_financial_score(profile: dict) -> tuple[int, str]:
         "Пробовал, но бросил": 0,
     }
     score += tracking_map.get(profile.get("expense_tracking", ""), 0)
-
-    debts_map = {
-        "Нет": 10,
-        "Есть кредитка": -5,
-        "Есть кредит": -10,
-        "Есть рассрочка": -5,
-        "Есть несколько долгов": -20,
-    }
-    score += debts_map.get(profile.get("debts_status", ""), 0)
-
-    salary_map = {
-        "Не остается вообще": -15,
-        "Остаюсь примерно в ноль": -5,
-        "Иногда немного остается": 5,
-        "Удается откладывать": 15,
-    }
-    score += salary_map.get(profile.get("salary_end_status", ""), 0)
 
     score = max(5, min(95, score))
 

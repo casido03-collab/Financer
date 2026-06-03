@@ -4,14 +4,9 @@ from aiogram.fsm.state import State, StatesGroup
 class OnboardingFSM(StatesGroup):
     work_type = State()
     work_sphere = State()
-    income_range = State()
     spending_style = State()
-    financial_literacy = State()
     impulsive_spending = State()
     expense_tracking = State()
-    debts_status = State()
-    salary_end_status = State()
-    money_before_salary = State()
 
 
 class ConsultationFSM(StatesGroup):
