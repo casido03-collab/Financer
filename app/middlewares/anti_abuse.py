@@ -3,22 +3,23 @@ from time import monotonic
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message, CallbackQuery, TelegramObject
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 
 # ─── Лимиты (секунды) ────────────────────────────────────────────────────────
-MESSAGE_COOLDOWN   = 0.7   # обычные сообщения / нажатия кнопок reply
-CALLBACK_COOLDOWN  = 1.0   # инлайн-кнопки
-AI_COOLDOWN        = 25.0  # запросы к OpenAI (консультация, анализ расходов)
+IDLE_COOLDOWN    = 0.7   # пользователь не в диалоге (защита от спама)
+DIALOG_COOLDOWN  = 0.3   # пользователь в активном FSM-диалоге (не мешаем кликать)
+CALLBACK_COOLDOWN = 1.0  # инлайн-кнопки
+AI_COOLDOWN      = 25.0  # запросы к OpenAI
 
-# Хендлеры, которые дёргают OpenAI — применяется AI_COOLDOWN
+# Хендлеры которые дёргают OpenAI
 AI_HANDLERS = {
-    "consultation_income",       # начало консультации
-    "expenses_free_text_handler",# анализ расходов через ИИ
-    "consultation_mandatory",    # финальный шаг → генерация плана
-    "debt_plan_start",           # план выхода из долгов
+    "consultation_income",
+    "expenses_free_text_handler",
+    "consultation_mandatory",
+    "debt_plan_start",
 }
 
-# Сколько подряд проигнорированных запросов до предупреждения
 WARN_AFTER = 3
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -39,22 +40,25 @@ class MessageThrottlingMiddleware(BaseMiddleware):
         if user_id is None:
             return await handler(event, data)
 
+        # Определяем лимит: в диалоге мягче
+        fsm: FSMContext = data.get("state")
+        fsm_state = await fsm.get_state() if fsm else None
+        cooldown = DIALOG_COOLDOWN if fsm_state else IDLE_COOLDOWN
+
         now = monotonic()
         elapsed = now - self._last[user_id]
 
-        if elapsed < MESSAGE_COOLDOWN:
+        if elapsed < cooldown:
             self._strikes[user_id] += 1
             if self._strikes[user_id] == WARN_AFTER:
-                await event.answer(
-                    "⏳ Не так быстро — подождите секунду между запросами."
-                )
-            return  # молча игнорируем
+                await event.answer("⏳ Не так быстро — подождите секунду.")
+            return
 
         self._strikes[user_id] = 0
         self._last[user_id] = now
 
-        # Проверяем AI-лимит для тяжёлых хендлеров
-        handler_name = handler.__name__ if hasattr(handler, "__name__") else ""
+        # AI-лимит
+        handler_name = getattr(handler, "__name__", "")
         if handler_name in AI_HANDLERS:
             ai_elapsed = now - self._ai_last[user_id]
             if ai_elapsed < AI_COOLDOWN:
