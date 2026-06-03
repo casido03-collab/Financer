@@ -3,6 +3,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from app.database.fsm_storage import SQLiteFSMStorage
+from app.middlewares.anti_abuse import MessageThrottlingMiddleware, CallbackThrottlingMiddleware
 
 from app.config import BOT_TOKEN
 from app.database.db import init_db
@@ -39,6 +40,9 @@ async def main():
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=SQLiteFSMStorage())
+
+    dp.message.middleware(MessageThrottlingMiddleware())
+    dp.callback_query.middleware(CallbackThrottlingMiddleware())
 
     dp.include_router(start.router)
     dp.include_router(reset.router)
