@@ -192,14 +192,15 @@ async def get_retention() -> dict:
                 result[label] = 0
                 continue
 
-            async with db.execute("""
+            sql = f"""
                 SELECT COUNT(DISTINCT u.id)
                 FROM users u
                 JOIN events e ON e.user_id = u.id
                 WHERE DATE(u.created_at) <= ?
                   AND DATE(e.created_at) BETWEEN DATE(u.created_at, '+1 day')
-                      AND DATE(u.created_at, '+? days')
-            """, (_days_ago(reg_days), ret_days)) as c:
+                      AND DATE(u.created_at, '+{ret_days} days')
+            """
+            async with db.execute(sql, (_days_ago(reg_days),)) as c:
                 came_back = (await c.fetchone())[0] or 0
 
             result[label] = round(came_back / base * 100, 1)
