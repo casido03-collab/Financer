@@ -5,6 +5,7 @@ from aiogram import Dispatcher
 from app.database.fsm_storage import SQLiteFSMStorage
 from app.middlewares.anti_abuse import MessageThrottlingMiddleware, CallbackThrottlingMiddleware
 from app.services.typing_bot import TypingBot
+from app.services.push_service import run_push_scheduler
 
 from app.config import BOT_TOKEN
 from app.database.db import init_db
@@ -75,6 +76,7 @@ async def main():
     dp.include_router(fallback.router)
 
     logger.info("Бот запускается...")
+    asyncio.create_task(run_push_scheduler(bot))
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
