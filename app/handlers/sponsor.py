@@ -2,7 +2,6 @@ import logging
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.context import FSMContext
 
 from app.database.settings import get_setting, set_setting
 from app.keyboards.sponsor_kb import sponsor_gate_kb
@@ -138,28 +137,8 @@ async def sponsor_check_callback(callback: CallbackQuery):
         await callback.answer("Вы ещё не подписались на канал.", show_alert=True)
 
 
-# ─── Interceptor: any reply button press while sponsor gate is active ──────────
-
-@router.message(F.text & ~F.text.startswith("/"))
-async def sponsor_intercept(message: Message, state: FSMContext):
-    """
-    Intercepts all non-command text messages.
-    If sponsor gate is active and user is not subscribed — show gate.
-    If not in FSM state — also enforce gate before proceeding to menu.
-    This router is registered FIRST, so it runs before section handlers.
-    """
-    # Only intercept when sponsor is enabled
-    if not await is_sponsor_enabled():
-        return  # pass through to other routers
-
-    # Skip interception if user is in an active FSM dialog
-    current_state = await state.get_state()
-    if current_state is not None:
-        return  # user is mid-flow, don't interfere
-
-    # Check subscription
-    if await is_subscribed(message.bot, message.from_user.id):
-        return  # subscribed → pass through
-
-    # Not subscribed → show gate and stop
-    await show_gate(message, message.bot)
+# Sponsor gate is enforced at two guaranteed entry points:
+# 1. End of onboarding (onboarding.py)
+# 2. send_main_menu() in menu.py — every section is accessed via main menu
+# A catch-all handler cannot be used here because aiogram 3 treats
+# any handler return as "handled" and stops further routing.
