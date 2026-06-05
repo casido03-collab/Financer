@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from datetime import datetime
 
 from app.database import db
+from app.database.analytics import touch_user
 from app.keyboards.reply import main_menu_kb
 
 router = Router()
@@ -39,6 +40,7 @@ async def send_main_menu(message: Message, user: dict):
         f"Статус: {sub_status}\n\n"
         "Выберите раздел ниже."
     )
+    await touch_user(user["telegram_id"])
     await message.answer(text, reply_markup=main_menu_kb(), parse_mode="HTML")
 
 

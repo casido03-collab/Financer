@@ -3,6 +3,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from app.database import db
+from app.database.analytics import record_section, record_budget_check
 from app.handlers.states import BudgetCheckFSM
 from app.keyboards.reply import cancel_kb, back_to_menu_kb
 from app.services.finance_calculators import calculate_daily_limit
@@ -13,6 +14,9 @@ router = Router()
 @router.message(F.text == "📊 Проверка бюджета")
 async def budget_check_start(message: Message, state: FSMContext):
     await state.clear()
+    user = await db.get_user(message.from_user.id)
+    if user:
+        await record_section(user["id"], "📊 Проверка бюджета")
     await state.set_state(BudgetCheckFSM.amount)
     await message.answer(
         "📊 <b>Проверка бюджета</b>\n\n"
@@ -83,6 +87,7 @@ async def budget_check_days(message: Message, state: FSMContext):
 
     user = await db.get_user(message.from_user.id)
     if user:
+        await record_budget_check(user["id"])
         await db.save_consultation(
             user_id=user["id"],
             consultation_type="budget_check",

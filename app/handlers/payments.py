@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from app.database import db
 from app.keyboards.reply import back_to_menu_kb, personal_cabinet_kb
 from app.keyboards.inline import subscription_kb
+from app.database.analytics import record_payment, track_event
 
 router = Router()
 
@@ -57,6 +58,9 @@ async def subscription_info(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "buy_14_days")
 async def buy_14_days(callback: CallbackQuery):
+    user = await db.get_user(callback.from_user.id)
+    if user:
+        await track_event(user["id"], "payment_initiated")
     await callback.message.answer_invoice(
         title="Финансовый план на 14 дней",
         description=(
@@ -94,6 +98,7 @@ async def successful_payment(message: Message):
 
     if payload == "plan_14_days":
         await db.activate_subscription(message.from_user.id, PLAN_14_DAYS)
+    await record_payment(user["id"])
         await message.answer(
             f"✅ <b>Оплата получена!</b>\n\n"
             f"Вам открыт расширенный финансовый план на {PLAN_14_DAYS} дней.\n\n"

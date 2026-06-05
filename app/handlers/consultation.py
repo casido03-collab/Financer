@@ -7,6 +7,7 @@ from app.handlers.states import ConsultationFSM
 from app.keyboards.reply import cancel_kb, back_to_menu_kb, consultation_mode_kb
 from app.keyboards.inline import upsell_14_days_kb
 from app.services.openai_service import generate_5_day_plan, generate_14_day_plan
+from app.database.analytics import record_ai_request, record_consultation, track_event
 
 router = Router()
 
@@ -17,6 +18,9 @@ PLAN_14_PRICE = 200
 async def consultation_start(message: Message, state: FSMContext):
     await state.clear()
     user = await db.get_user(message.from_user.id)
+    if user:
+        from app.database.analytics import record_section
+        await record_section(user["id"], "💬 Консультация")
     if not user:
         await message.answer("Сначала запустите бота командой /start")
         return
@@ -210,6 +214,8 @@ async def consultation_mandatory(message: Message, state: FSMContext):
 
     await state.set_state(ConsultationFSM.waiting_result)
     await message.answer("⏳ Формирую Ваш финансовый план...", reply_markup=cancel_kb())
+    if user:
+        await record_ai_request(user["id"])
 
     user_data = {
         "Доход": f"{data.get('income', 0):,.0f} ₽",
@@ -248,7 +254,12 @@ async def consultation_mandatory(message: Message, state: FSMContext):
 
     await message.answer(ai_response, reply_markup=back_to_menu_kb(), parse_mode="HTML")
 
+    if user:
+        await record_consultation(user["id"])
+
     if not is_paid:
+        if user:
+            await track_event(user["id"], "upsell_shown")
         await message.answer(
             "Хотите получить подробный план расходов на 14 дней?\n\n"
             "Он поможет заранее распределить деньги до зарплаты и снизить риск остаться без средств.\n\n"

@@ -13,6 +13,7 @@ async def get_db() -> aiosqlite.Connection:
 
 
 async def init_db():
+    from app.database.analytics import migrate_analytics
     os.makedirs("data", exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript("""
@@ -83,6 +84,7 @@ async def init_db():
             );
         """)
         await db.commit()
+    await migrate_analytics()
 
 
 async def get_or_create_user(telegram_id: int, username: Optional[str], first_name: Optional[str]) -> dict:

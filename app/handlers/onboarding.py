@@ -10,6 +10,7 @@ from app.keyboards.reply import (
     impulsive_spending_kb, expense_tracking_kb, open_menu_kb,
 )
 from app.services.finance_calculators import calculate_financial_score
+from app.database.analytics import track_event, touch_user
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -29,6 +30,8 @@ TRACKING  = ["Да, регулярно", "Иногда", "Нет", "Пробов
 @router.message(F.text == "🚀 Начать диагностику")
 async def start_onboarding(message: Message, state: FSMContext):
     await state.set_state(OnboardingFSM.work_type)
+    user = await db.get_or_create_user(message.from_user.id, message.from_user.username, message.from_user.first_name)
+    await track_event(user["id"], "onboarding_start")
     await message.answer("Кем Вы сейчас работаете?", reply_markup=work_type_kb())
 
 

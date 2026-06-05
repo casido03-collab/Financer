@@ -2,6 +2,8 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from app.database import db
+from app.database.analytics import track_event, record_section
 from app.keyboards.reply import back_to_menu_kb
 from app.keyboards.inline import articles_list_kb, back_to_articles_kb
 from app.texts.articles import ARTICLES
@@ -12,6 +14,9 @@ router = Router()
 @router.message(F.text == "📚 Полезные статьи")
 async def articles_start(message: Message, state: FSMContext):
     await state.clear()
+    user = await db.get_user(message.from_user.id)
+    if user:
+        await record_section(user["id"], "📚 Статьи")
     await message.answer(
         "📚 <b>Полезные статьи о финансах</b>\n\nВыберите статью:",
         reply_markup=articles_list_kb(page=0),
@@ -34,6 +39,9 @@ async def show_article(callback: CallbackQuery):
         await callback.answer("Статья не найдена.")
         return
 
+    user = await db.get_user(callback.from_user.id)
+    if user:
+        await track_event(user["id"], "article_view", article["title"])
     await callback.message.answer(
         article["text"],
         reply_markup=back_to_articles_kb(),

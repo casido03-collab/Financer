@@ -13,6 +13,7 @@ from app.handlers import (
     onboarding,
     menu,
     reset,
+    admin,
     consultation,
     budget_check,
     credit_cards,
@@ -44,6 +45,7 @@ async def main():
 
     # Онбординг и сброс — без throttle, чтобы не мешать кликам по кнопкам
     dp.include_router(start.router)
+    dp.include_router(admin.router)
     dp.include_router(reset.router)
     dp.include_router(onboarding.router)
 
