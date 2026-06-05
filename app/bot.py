@@ -5,6 +5,7 @@ from aiogram import Dispatcher
 from app.database.fsm_storage import SQLiteFSMStorage
 from app.middlewares.anti_abuse import MessageThrottlingMiddleware, CallbackThrottlingMiddleware
 from app.services.typing_bot import TypingBot
+from app.handlers.sponsor import SponsorMiddleware
 from app.services.push_service import run_push_scheduler
 
 from app.config import BOT_TOKEN
@@ -52,15 +53,21 @@ async def main():
     dp.include_router(reset.router)
     dp.include_router(onboarding.router)
 
-    # Все остальные роутеры — с защитой от абуза
-    throttle = MessageThrottlingMiddleware()
+    # Все остальные роутеры — с защитой от абуза и спонсорским гейтом
+    throttle    = MessageThrottlingMiddleware()
     cb_throttle = CallbackThrottlingMiddleware()
+    sponsor_mw  = SponsorMiddleware()
 
-    for r in (menu.router, consultation.router, budget_check.router,
-              credit_cards.router, goals.router, expenses.router,
-              rating.router, articles.router, personal_cabinet.router,
-              payments.router, fallback.router):
+    section_routers = (
+        menu.router, consultation.router, budget_check.router,
+        credit_cards.router, goals.router, expenses.router,
+        rating.router, articles.router, personal_cabinet.router,
+        payments.router, fallback.router,
+    )
+
+    for r in section_routers:
         r.message.middleware(throttle)
+        r.message.middleware(sponsor_mw)   # gate before every section
 
     for r in (articles.router, personal_cabinet.router, goals.router):
         r.callback_query.middleware(cb_throttle)

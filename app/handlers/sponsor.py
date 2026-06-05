@@ -1,7 +1,9 @@
 import logging
-from aiogram import Router, F, Bot
+from typing import Any, Awaitable, Callable, Dict
+from aiogram import Router, F, Bot, BaseMiddleware
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 
 from app.database.settings import get_setting, set_setting
 from app.keyboards.sponsor_kb import sponsor_gate_kb
@@ -137,8 +139,43 @@ async def sponsor_check_callback(callback: CallbackQuery):
         await callback.answer("Вы ещё не подписались на канал.", show_alert=True)
 
 
-# Sponsor gate is enforced at two guaranteed entry points:
-# 1. End of onboarding (onboarding.py)
-# 2. send_main_menu() in menu.py — every section is accessed via main menu
-# A catch-all handler cannot be used here because aiogram 3 treats
-# any handler return as "handled" and stops further routing.
+class SponsorMiddleware(BaseMiddleware):
+    """
+    Applied to all section routers.
+    If sponsor gate is active and user is not subscribed:
+      - Passes through if user is in an active FSM state (don't interrupt dialogs)
+      - Shows gate and blocks otherwise
+    """
+
+    async def __call__(
+        self,
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        event: Message,
+        data: Dict[str, Any],
+    ) -> Any:
+        # Only intercept Message events
+        if not isinstance(event, Message):
+            return await handler(event, data)
+
+        # If sponsor disabled — pass through immediately
+        if not await is_sponsor_enabled():
+            return await handler(event, data)
+
+        # If user is in an active FSM dialog — don't interrupt
+        fsm: FSMContext = data.get("state")
+        if fsm:
+            current = await fsm.get_state()
+            if current is not None:
+                return await handler(event, data)
+
+        # Skip commands (/, /start, /admin etc.)
+        if event.text and event.text.startswith("/"):
+            return await handler(event, data)
+
+        # Check subscription
+        if await is_subscribed(event.bot, event.from_user.id):
+            return await handler(event, data)
+
+        # Not subscribed → show gate, block handler
+        await show_gate(event, event.bot)
+        return  # handler is NOT called
