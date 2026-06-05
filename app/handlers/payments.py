@@ -98,7 +98,7 @@ async def successful_payment(message: Message):
 
     if payload == "plan_14_days":
         await db.activate_subscription(message.from_user.id, PLAN_14_DAYS)
-    await record_payment(user["id"])
+        await record_payment(user["id"])
         await message.answer(
             f"✅ <b>Оплата получена!</b>\n\n"
             f"Вам открыт расширенный финансовый план на {PLAN_14_DAYS} дней.\n\n"
