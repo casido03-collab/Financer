@@ -11,6 +11,12 @@ router = Router()
 
 
 async def send_main_menu(message: Message, user: dict):
+    # Sponsor gate check — intercept before showing menu
+    from app.handlers.sponsor import is_sponsor_enabled, is_subscribed, show_gate
+    if await is_sponsor_enabled() and not await is_subscribed(message.bot, message.from_user.id):
+        await show_gate(message, message.bot)
+        return
+
     profile = await db.get_user_profile(user["id"])
     score = profile.get("financial_score", 0) if profile else 0
     main_risk = profile.get("main_risk", "Не определен") if profile else "Не определен"

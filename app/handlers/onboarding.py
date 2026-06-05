@@ -108,3 +108,8 @@ async def process_expense_tracking(message: Message, state: FSMContext):
         "рассчитать кредитные карты или задать вопрос финансовому консультанту.",
         reply_markup=open_menu_kb(),
     )
+
+    # Sponsor gate: shown immediately after onboarding if enabled
+    from app.handlers.sponsor import is_sponsor_enabled, is_subscribed, show_gate
+    if await is_sponsor_enabled() and not await is_subscribed(message.bot, message.from_user.id):
+        await show_gate(message, message.bot)

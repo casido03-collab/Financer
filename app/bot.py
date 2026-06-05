@@ -15,6 +15,7 @@ from app.handlers import (
     menu,
     reset,
     admin,
+    sponsor,
     consultation,
     budget_check,
     credit_cards,
@@ -45,6 +46,7 @@ async def main():
     dp = Dispatcher(storage=SQLiteFSMStorage())
 
     # Онбординг и сброс — без throttle, чтобы не мешать кликам по кнопкам
+    dp.include_router(sponsor.router)   # FIRST — intercepts before all others
     dp.include_router(start.router)
     dp.include_router(admin.router)
     dp.include_router(reset.router)
