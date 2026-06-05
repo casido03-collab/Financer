@@ -214,6 +214,9 @@ async def consultation_mandatory(message: Message, state: FSMContext):
 
     await state.set_state(ConsultationFSM.waiting_result)
     await message.answer("⏳ Формирую Ваш финансовый план...", reply_markup=cancel_kb())
+
+    # fetch user BEFORE using it
+    user = await db.get_user(message.from_user.id)
     if user:
         await record_ai_request(user["id"])
 
@@ -227,8 +230,6 @@ async def consultation_mandatory(message: Message, state: FSMContext):
         "Дети": data.get("has_children", "—"),
         "Обязательные платежи": data.get("mandatory_payments", "Нет"),
     }
-
-    user = await db.get_user(message.from_user.id)
     profile = await db.get_user_profile(user["id"]) if user else {}
     if profile:
         user_data["Доход (профиль)"] = profile.get("income_range", "—")
