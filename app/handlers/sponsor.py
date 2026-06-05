@@ -70,6 +70,8 @@ async def check_gate(message: Message, bot: Bot) -> bool:
     """
     if not await is_sponsor_enabled():
         return True
+    if message.from_user.id == ADMIN_ID:
+        return True
     if await is_subscribed(bot, message.from_user.id):
         return True
     await show_gate(message, bot)
@@ -170,6 +172,10 @@ class SponsorMiddleware(BaseMiddleware):
 
         # Skip commands (/, /start, /admin etc.)
         if event.text and event.text.startswith("/"):
+            return await handler(event, data)
+
+        # Admin bypass — never show gate to admin
+        if event.from_user.id == ADMIN_ID:
             return await handler(event, data)
 
         # Check subscription
