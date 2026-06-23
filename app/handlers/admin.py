@@ -5,14 +5,13 @@ from aiogram.fsm.context import FSMContext
 
 from app.database import analytics as an
 from app.keyboards.admin_kb import admin_main_kb, admin_back_kb
+from app.config import ADMIN_IDS
 
 router = Router()
 
-ADMIN_ID = 1715461306
-
 
 def _guard(user_id: int) -> bool:
-    return user_id == ADMIN_ID
+    return user_id in ADMIN_IDS
 
 
 # ─── /admin ───────────────────────────────────────────────────────────────────

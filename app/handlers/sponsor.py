@@ -7,11 +7,10 @@ from aiogram.fsm.context import FSMContext
 
 from app.database.settings import get_setting, set_setting
 from app.keyboards.sponsor_kb import sponsor_gate_kb
+from app.config import ADMIN_IDS
 
 logger = logging.getLogger(__name__)
 router = Router()
-
-ADMIN_ID = 1715461306
 
 GATE_TEXT = (
     "Прежде чем начнем я хотел бы кое что сказать. "
@@ -70,7 +69,7 @@ async def check_gate(message: Message, bot: Bot) -> bool:
     """
     if not await is_sponsor_enabled():
         return True
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id in ADMIN_IDS:
         return True
     if await is_subscribed(bot, message.from_user.id):
         return True
@@ -82,7 +81,7 @@ async def check_gate(message: Message, bot: Bot) -> bool:
 
 @router.message(Command("link"))
 async def cmd_link(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         return
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
@@ -95,7 +94,7 @@ async def cmd_link(message: Message):
 
 @router.message(Command("channel_id"))
 async def cmd_channel_id(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         return
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
@@ -108,7 +107,7 @@ async def cmd_channel_id(message: Message):
 
 @router.message(Command("sponsor"))
 async def cmd_sponsor_toggle(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         return
     current = await get_setting("sponsor:enabled", "0")
     new_val = "0" if current == "1" else "1"
@@ -175,7 +174,7 @@ class SponsorMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         # Admin bypass — never show gate to admin
-        if event.from_user.id == ADMIN_ID:
+        if event.from_user.id in ADMIN_IDS:
             return await handler(event, data)
 
         # Check subscription
